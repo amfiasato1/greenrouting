@@ -1,0 +1,112 @@
+name: Update Green Routing
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Daily rebuild of the slim geofiles and profile refresh.
+    - cron: "30 3 * * *"
+  push:
+    branches:
+      - main
+    paths:
+      - "data/**"
+      - "build/**"
+      - ".github/workflows/update.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-green-routing
+  cancel-in-progress: false
+
+jobs:
+  update:
+    name: Build geofiles and refresh profiles
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout codebase
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Checkout upstream list sources
+        uses: actions/checkout@v6
+        with:
+          repository: v2fly/domain-list-community
+          path: community
+          fetch-depth: 1
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: community/go.mod
+          cache: true
+          cache-dependency-path: community/go.sum
+
+      - name: Pick release tag
+        run: |
+          set -euo pipefail
+          TAG="$(date -u +%Y%m%d%H%M)"
+          if git ls-remote --exit-code --tags origin "refs/tags/${TAG}" >/dev/null 2>&1; then
+            TAG="${TAG}-r${GITHUB_RUN_NUMBER}"
+          fi
+          echo "RELEASE_TAG=${TAG}" >> "$GITHUB_ENV"
+
+      - name: Build geosite.dat
+        run: ./build/build-geosite.sh
+
+      - name: Build geoip.dat
+        run: ./build/build-geoip.sh
+
+      - name: Commit artifacts and push tag
+        run: |
+          set -euo pipefail
+          sha256sum release/geosite.dat release/geoip.dat > release/SHA256SUMS
+          git config user.name "green-routing-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add release
+          if git diff --cached --quiet; then
+            echo "Geofiles unchanged since the last run; keeping the current tag."
+            echo "SKIP_PROFILES=1" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          git commit -m "Green Routing geofiles ${RELEASE_TAG}"
+          git tag "${RELEASE_TAG}"
+          git push origin main "refs/tags/${RELEASE_TAG}"
+
+      - name: Wait for jsDelivr to serve the new tag
+        if: env.SKIP_PROFILES != '1'
+        run: |
+          set -euo pipefail
+          # Clients must never receive profiles pinned to a tag whose files
+          # jsDelivr cannot serve yet — a 404 body saved as .dat is exactly
+          # how "section WHITELIST is missing" happens on phones.
+          expected_gs=$(sed -n 's/^\([0-9a-f]*\)  release\/geosite.dat$/\1/p' release/SHA256SUMS)
+          expected_gi=$(sed -n 's/^\([0-9a-f]*\)  release\/geoip.dat$/\1/p' release/SHA256SUMS)
+          ok=""
+          for _ in $(seq 1 20); do
+            curl -fsSL --retry 2 "https://cdn.jsdelivr.net/gh/${GITHUB_REPOSITORY}@${RELEASE_TAG}/release/geosite.dat" -o /tmp/gs.dat || { sleep 30; continue; }
+            curl -fsSL --retry 2 "https://cdn.jsdelivr.net/gh/${GITHUB_REPOSITORY}@${RELEASE_TAG}/release/geoip.dat" -o /tmp/gi.dat || { sleep 30; continue; }
+            if [ "$(sha256sum /tmp/gs.dat | cut -d' ' -f1)" = "$expected_gs" ] \
+              && [ "$(sha256sum /tmp/gi.dat | cut -d' ' -f1)" = "$expected_gi" ]; then
+              ok=1; break
+            fi
+            sleep 30
+          done
+          [ -n "$ok" ] || {
+            echo "jsDelivr did not start serving ${RELEASE_TAG} with matching checksums." >&2
+            echo "Profiles keep the previous known-good tag; investigate manually." >&2
+            exit 1
+          }
+
+      - name: Regenerate and push profiles
+        if: env.SKIP_PROFILES != '1'
+        run: |
+          set -euo pipefail
+          python3 build/gen-profiles.py --tag "${RELEASE_TAG}"
+          git add HAPP INCY
+          if ! git diff --cached --quiet; then
+            git commit -m "Green Routing profiles ${RELEASE_TAG}"
+          fi
+          git push origin main

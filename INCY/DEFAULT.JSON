@@ -1,0 +1,37 @@
+{
+ "Name": "Green Routing",
+ "GlobalProxy": "true",
+ "UseChunkFiles": "false",
+ "RemoteDns": "8.8.8.8",
+ "DomesticDns": "77.88.8.8",
+ "RemoteDNSType": "DoH",
+ "RemoteDNSDomain": "https://8.8.8.8/dns-query",
+ "RemoteDNSIP": "8.8.8.8",
+ "DomesticDNSType": "DoH",
+ "DomesticDNSDomain": "https://77.88.8.8/dns-query",
+ "DomesticDNSIP": "77.88.8.8",
+ "Geoipurl": "https://cdn.jsdelivr.net/gh/amfiasato1/greenrouting@202608260945/release/geoip.dat",
+ "Geositeurl": "https://cdn.jsdelivr.net/gh/amfiasato1/greenrouting@202608260945/release/geosite.dat",
+ "LastUpdated": "1787737518",
+ "DnsHosts": {
+  "lkfl2.nalog.ru": "213.24.64.175",
+  "lknpd.nalog.ru": "213.24.64.181"
+ },
+ "RouteOrder": "block-proxy-direct",
+ "DirectSites": [
+  "geosite:private",
+  "geosite:category-ru",
+  "geosite:whitelist"
+ ],
+ "DirectIp": [
+  "geoip:private",
+  "geoip:yandex",
+  "geoip:ru-whitelist"
+ ],
+ "ProxySites": [],
+ "ProxyIp": [],
+ "BlockSites": [],
+ "BlockIp": [],
+ "DomainStrategy": "IPIfNonMatch",
+ "FakeDNS": "false"
+}
