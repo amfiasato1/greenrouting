@@ -59,6 +59,10 @@ jobs:
       - name: Build geoip.dat
         run: ./build/build-geoip.sh
 
+      - name: Export mobile IPv4 whitelist
+        continue-on-error: true
+        run: python3 build/export-whitelist.py release/geoip.dat release/whitelist-ipv4.txt
+
       - name: Commit artifacts and push tag
         run: |
           set -euo pipefail
