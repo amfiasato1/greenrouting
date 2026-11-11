@@ -64,8 +64,8 @@ proxy-groups:
   - name: Green Proxy
     type: select
     proxies:
-      - Green Auto
-  - name: Green Auto
+      - Автовыбор
+  - name: Автовыбор
     type: url-test
     url: https://cp.cloudflare.com/generate_204
     interval: 300
