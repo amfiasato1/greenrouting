@@ -1,0 +1,9 @@
+payload:
+  - "DOMAIN-SUFFIX,2ip.ru"
+  - "DOMAIN-SUFFIX,checkip.amazonaws.com"
+  - "DOMAIN-SUFFIX,ifconfig.me"
+  - "DOMAIN-SUFFIX,ip.sb"
+  - "DOMAIN-SUFFIX,ipapi.is"
+  - "DOMAIN-SUFFIX,ipify.org"
+  - "DOMAIN-SUFFIX,iplocate.io"
+  - "DOMAIN-SUFFIX,showip.net"

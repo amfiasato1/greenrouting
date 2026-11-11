@@ -1,0 +1,133 @@
+remnawave:
+  includeHiddenHosts: false
+
+mixed-port: 7890
+allow-lan: false
+mode: rule
+log-level: info
+ipv6: false
+unified-delay: true
+tcp-concurrent: true
+
+profile:
+  store-selected: true
+
+hosts:
+  lkfl2.nalog.ru: 213.24.64.175
+  lknpd.nalog.ru: 213.24.64.181
+
+tun:
+  enable: true
+  stack: mixed
+  auto-route: true
+  auto-detect-interface: true
+  dns-hijack:
+    - any:53
+    - tcp://any:53
+
+sniffer:
+  enable: true
+  force-dns-mapping: true
+  parse-pure-ip: true
+  override-destination: false
+  sniff:
+    HTTP:
+      ports: [80, 8080-8880]
+    TLS:
+      ports: [443, 8443]
+    QUIC:
+      ports: [443, 8443]
+
+dns:
+  enable: true
+  ipv6: false
+  use-hosts: true
+  enhanced-mode: redir-host
+  default-nameserver:
+    - https://77.88.8.8/dns-query
+  proxy-server-nameserver:
+    - https://77.88.8.8/dns-query#DIRECT
+  direct-nameserver:
+    - https://77.88.8.8/dns-query#DIRECT
+  direct-nameserver-follow-policy: true
+  nameserver:
+    - https://8.8.8.8/dns-query#Green Proxy
+  nameserver-policy:
+    rule-set:green-private:
+      - system
+    rule-set:green-category-ru,green-whitelist:
+      - https://77.88.8.8/dns-query#DIRECT
+
+proxies: []
+
+proxy-groups:
+  - name: Green Proxy
+    type: select
+    proxies:
+      - Green Auto
+  - name: Green Auto
+    type: url-test
+    url: https://cp.cloudflare.com/generate_204
+    interval: 300
+    tolerance: 100
+    lazy: true
+    proxies: []
+
+rule-providers:
+  green-private:
+    type: http
+    behavior: classical
+    format: yaml
+    url: https://cdn.jsdelivr.net/gh/amfiasato1/greenrouting@main/release/mihomo/private.yaml
+    path: ./rule-sets/greenrouting/private.yaml
+    interval: 86400
+    proxy: Green Proxy
+  green-category-ru:
+    type: http
+    behavior: classical
+    format: yaml
+    url: https://cdn.jsdelivr.net/gh/amfiasato1/greenrouting@main/release/mihomo/category-ru.yaml
+    path: ./rule-sets/greenrouting/category-ru.yaml
+    interval: 86400
+    proxy: Green Proxy
+  green-whitelist:
+    type: http
+    behavior: classical
+    format: yaml
+    url: https://cdn.jsdelivr.net/gh/amfiasato1/greenrouting@main/release/mihomo/whitelist.yaml
+    path: ./rule-sets/greenrouting/whitelist.yaml
+    interval: 86400
+    proxy: Green Proxy
+  green-private-ip:
+    type: http
+    behavior: ipcidr
+    format: yaml
+    url: https://cdn.jsdelivr.net/gh/amfiasato1/greenrouting@main/release/mihomo/private-ip.yaml
+    path: ./rule-sets/greenrouting/private-ip.yaml
+    interval: 86400
+    proxy: Green Proxy
+  green-yandex:
+    type: http
+    behavior: ipcidr
+    format: yaml
+    url: https://cdn.jsdelivr.net/gh/amfiasato1/greenrouting@main/release/mihomo/yandex.yaml
+    path: ./rule-sets/greenrouting/yandex.yaml
+    interval: 86400
+    proxy: Green Proxy
+  green-ru-whitelist:
+    type: http
+    behavior: ipcidr
+    format: yaml
+    url: https://cdn.jsdelivr.net/gh/amfiasato1/greenrouting@main/release/mihomo/ru-whitelist.yaml
+    path: ./rule-sets/greenrouting/ru-whitelist.yaml
+    interval: 86400
+    proxy: Green Proxy
+
+rules:
+  - RULE-SET,green-private,DIRECT
+  - RULE-SET,green-category-ru,DIRECT
+  - RULE-SET,green-whitelist,DIRECT
+  - RULE-SET,green-private-ip,DIRECT
+  - RULE-SET,green-yandex,DIRECT
+  - RULE-SET,green-ru-whitelist,DIRECT
+  - MATCH,Green Proxy
