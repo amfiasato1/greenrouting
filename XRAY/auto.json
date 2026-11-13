@@ -1,0 +1,147 @@
+{
+  "remnawave": {
+    "addVirtualHostAsOutbound": false,
+    "injectHosts": [
+      {
+        "selector": {
+          "type": "tagRegex",
+          "pattern": "^GREEN_AUTO$"
+        },
+        "selectFrom": "NOT_HIDDEN",
+        "tagPrefix": "proxy"
+      }
+    ]
+  },
+  "log": {
+    "loglevel": "warning"
+  },
+  "dns": {
+    "hosts": {
+      "lkfl2.nalog.ru": "213.24.64.175",
+      "lknpd.nalog.ru": "213.24.64.181"
+    },
+    "servers": [
+      "https://8.8.8.8/dns-query",
+      {
+        "address": "localhost",
+        "domains": [
+          "geosite:private"
+        ],
+        "skipFallback": true
+      },
+      {
+        "address": "https+local://77.88.8.8/dns-query",
+        "domains": [
+          "geosite:category-ru",
+          "geosite:whitelist"
+        ],
+        "skipFallback": true
+      }
+    ],
+    "queryStrategy": "UseIPv4",
+    "disableFallbackIfMatch": true,
+    "tag": "green-dns-remote"
+  },
+  "routing": {
+    "domainStrategy": "IPOnDemand",
+    "rules": [
+      {
+        "type": "field",
+        "inboundTag": [
+          "green-dns-remote"
+        ],
+        "balancerTag": "green-auto"
+      },
+      {
+        "type": "field",
+        "domain": [
+          "geosite:private",
+          "geosite:category-ru",
+          "geosite:whitelist"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "type": "field",
+        "ip": [
+          "geoip:private",
+          "geoip:yandex",
+          "geoip:ru-whitelist"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "type": "field",
+        "network": "tcp,udp",
+        "balancerTag": "green-auto"
+      }
+    ],
+    "balancers": [
+      {
+        "tag": "green-auto",
+        "selector": [
+          "proxy"
+        ],
+        "strategy": {
+          "type": "leastPing"
+        },
+        "fallbackTag": "block"
+      }
+    ]
+  },
+  "inbounds": [
+    {
+      "tag": "socks",
+      "port": 10808,
+      "listen": "127.0.0.1",
+      "protocol": "socks",
+      "settings": {
+        "udp": true,
+        "auth": "noauth"
+      },
+      "sniffing": {
+        "enabled": true,
+        "routeOnly": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
+      }
+    },
+    {
+      "tag": "http",
+      "port": 10809,
+      "listen": "127.0.0.1",
+      "protocol": "http",
+      "settings": {},
+      "sniffing": {
+        "enabled": true,
+        "routeOnly": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "tag": "direct",
+      "protocol": "freedom"
+    },
+    {
+      "tag": "block",
+      "protocol": "blackhole"
+    }
+  ],
+  "observatory": {
+    "subjectSelector": [
+      "proxy"
+    ],
+    "probeUrl": "https://cp.cloudflare.com/generate_204",
+    "probeInterval": "60s",
+    "enableConcurrency": true
+  }
+}
