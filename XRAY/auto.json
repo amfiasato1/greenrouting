@@ -1,16 +1,11 @@
 {
+  "remnarouting": {
+    "strategy": "orderedFallback",
+    "hostTag": "GREEN_AUTO"
+  },
   "remnawave": {
     "addVirtualHostAsOutbound": false,
-    "injectHosts": [
-      {
-        "selector": {
-          "type": "tagRegex",
-          "pattern": "^GREEN_AUTO$"
-        },
-        "selectFrom": "NOT_HIDDEN",
-        "tagPrefix": "proxy"
-      }
-    ]
+    "injectHosts": []
   },
   "log": {
     "loglevel": "warning"
@@ -80,10 +75,10 @@
       {
         "tag": "green-auto",
         "selector": [
-          "proxy"
+          "proxy-unconfigured-"
         ],
         "strategy": {
-          "type": "leastPing"
+          "type": "random"
         },
         "fallbackTag": "block"
       }
@@ -138,7 +133,7 @@
   ],
   "observatory": {
     "subjectSelector": [
-      "proxy"
+      "proxy-"
     ],
     "probeUrl": "https://cp.cloudflare.com/generate_204",
     "probeInterval": "60s",
