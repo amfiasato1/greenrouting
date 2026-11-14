@@ -136,7 +136,7 @@
       "proxy-"
     ],
     "probeUrl": "https://cp.cloudflare.com/generate_204",
-    "probeInterval": "60s",
+    "probeInterval": "30s",
     "enableConcurrency": true
   }
 }
